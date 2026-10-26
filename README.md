@@ -1,6 +1,8 @@
 # control-lab · 自动控制原理交互实验台
 
-**打开即用的单文件 HTML**——双击 `index.html` 就能在浏览器里交互式地做自控原理核心实验。零依赖、零安装、离线可用、手机也能开，所有计算在本地完成。
+[![在线演示](https://img.shields.io/badge/demo-%E5%9C%A8%E7%BA%BF%E6%89%93%E5%BC%80-0f6cbd?style=flat-square)](https://leslieryin.github.io/control-lab/)
+
+**打开即用的单文件 HTML**——[在线直接用](https://leslieryin.github.io/control-lab/)，或下载 `index.html` 双击离线运行。零依赖、零安装、离线可用、手机也能开，所有计算在本地完成。
 
 为《自动控制原理》课程的核心概念而设计：与其背公式，不如拖动滑块亲眼看 ζ、K<sub>p</sub>、K<sub>i</sub>、K<sub>d</sub> 改变时曲线如何变化。
 
