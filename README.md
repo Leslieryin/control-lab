@@ -7,7 +7,9 @@
 
 为《自动控制原理》课程的核心概念而设计：与其背公式，不如拖动滑块亲眼看 ζ、K<sub>p</sub>、K<sub>i</sub>、K<sub>d</sub> 改变时曲线如何变化。
 
-![二阶系统阶跃响应：拖动阻尼比 ζ 与自然频率 ωn，曲线、超调量、峰值时间实时重算](docs/shot-step.png)
+> **EN** — A single-file interactive lab for classical control theory: step response, PID, Bode, Nyquist and root locus, all computed locally in your browser. Drag a slider and watch the curve, overshoot and stability margins update. [Try it →](https://leslieryin.github.io/control-lab/)
+
+![拖动阻尼比 ζ，超调量与调节时间随之实时变化](docs/demo.gif)
 
 ## 五个实验
 
