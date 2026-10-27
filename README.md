@@ -1,6 +1,7 @@
 # control-lab · 自动控制原理交互实验台
 
 [![在线演示](https://img.shields.io/badge/demo-%E5%9C%A8%E7%BA%BF%E6%89%93%E5%BC%80-0f6cbd?style=flat-square)](https://leslieryin.github.io/control-lab/)
+![CI](https://github.com/Leslieryin/control-lab/actions/workflows/ci.yml/badge.svg)
 
 **打开即用的单文件 HTML**——[在线直接用](https://leslieryin.github.io/control-lab/)，或下载 `index.html` 双击离线运行。零依赖、零安装、离线可用、手机也能开，所有计算在本地完成。
 
