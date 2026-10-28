@@ -512,13 +512,14 @@ function setChips(id,items){const box=document.getElementById(id);box.innerHTML=
     pm_.text("幅频 |G| / dB",Math.log10(wMin)+0.02,Math.min(magHi,74)-4,"#8a97a5",11);
     const pp_=new Plot($("cv-bodeph"));
     const phLo=Math.min(...phases),phHi=Math.max(...phases);
-    pp_.frame([Math.log10(wMin),Math.log10(wMax)],[phLo-20,Math.min(phHi,60)],
+    const phTop=Math.min(phHi,60),phBot=phLo-20;
+    pp_.frame([Math.log10(wMin),Math.log10(wMax)],[phBot,phTop],
       {fx:x=>fmt(Math.pow(10,x)),fy:y=>y.toFixed(0)});
     pp_.hline(-180,"#b9c5d2");
     pp_.line(ws.map((w,i)=>[Math.log10(w),phases[i]]),"#0f6cbd",2.2);
     if(wpc){pp_.dot(Math.log10(wpc),-180,"#d97706",4);
       pp_.text("ω-180="+fmt(wpc),Math.log10(wpc),-160,"#b45309",11,"center");}
-    pp_.text("相频 ∠G / (°)",Math.log10(wMin)+0.02,Math.min(phHi,40),"#8a97a5",11);
+    pp_.text("相频 ∠G / (°)",Math.log10(wMin)+0.02,phTop-(phTop-phBot)*0.08,"#8a97a5",11);
     // 闭环极点（共轭对合并显示）
     const denC=den.map((v,i)=>v+(num[i]||0)); // D+N（单位反馈特征多项式）
     const roots=polyRoots(denC);
