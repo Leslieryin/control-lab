@@ -241,7 +241,7 @@ class Plot{
       ctx.beginPath();ctx.moveTo(X(x),this.padT);ctx.lineTo(X(x),h-this.padB);ctx.stroke();
       // 首末刻度向内对齐，避免被画布边缘截断
       ctx.textAlign=i===0?"left":i===nx?"right":"center";
-      ctx.fillText(opt.fx?opt.fx(x):fmt(x),X(x)+(i===0?-4:i===nx?4:0)*0,h-this.padB+14);
+      ctx.fillText(opt.fx?opt.fx(x):fmt(x),X(x),h-this.padB+14);
     }
     for(let j=0;j<=ny;j++){
       const y=yr[0]+(yr[1]-yr[0])*j/ny;
@@ -473,6 +473,7 @@ function setChips(id,items){const box=document.getElementById(id);box.innerHTML=
   function render(){
     const num=parseCoefs($("in-num").value),den=parseCoefs($("in-den").value);
     if(!num.length||!den.length){setChips("bode-chips",["请输入有效的多项式系数"]);return;}
+    if(num.length>den.length){setChips("bode-chips",["请输入真分式（分子次数 ≤ 分母次数）：非真分式时闭环特征多项式会被静默截断，结果无声变错"]);return;}
     const wMin=1e-2,wMax=1e3,M=1200;
     const pts=[],mags=[],phases=[],ws=[];
     let pUnwrap=0,prevPh=null;
@@ -558,6 +559,7 @@ function setChips(id,items){const box=document.getElementById(id);box.innerHTML=
   function render(){
     const num=parseCoefs($("in-num2").value),den=parseCoefs($("in-den2").value);
     if(!num.length||!den.length){setChips("nyq-chips",["请输入有效的多项式系数"]);return;}
+    if(num.length>den.length){setChips("nyq-chips",["请输入真分式（分子次数 ≤ 分母次数）：非真分式时闭环特征多项式会被静默截断，结果无声变错"]);return;}
     const wMax=200,M=800,pos=[];
     for(let i=0;i<=M;i++){
       const w=wMax*Math.pow(0.001/1,i/M); // 从 200 → 0.001 对数扫
@@ -585,10 +587,11 @@ function setChips(id,items){const box=document.getElementById(id);box.innerHTML=
     const denC=den.map((v,i)=>v+(num[i]||0));
     const roots=polyRoots(denC);
     const rhp=roots.filter(r=>r.re>=0);
+    const rhpOpen=polyRoots(den).filter(r=>r.re>=0).length;
     setChips("nyq-chips",[
-      rhp.length===0?`闭环右半平面极点数 Z = 0：<span class="stable">闭环稳定（曲线不包围临界点）</span>`
-        :`Z = <b>${rhp.length}</b>：<span class="unstable">闭环不稳定（曲线包围临界点）</span>`,
-      `开环极点 P = <b>${den.length-1}</b> 个（右半平面 ${polyRoots(den).filter(r=>r.re>=0).length} 个）`,
+      rhp.length===0?`闭环右半平面极点数 Z = 0：<span class="stable">闭环稳定</span>${rhpOpen?"（开环有右半平面极点，非最小相位，「不包围⇔稳定」不适用，以闭环极点直接判定为准）":"（曲线不包围临界点）"}`
+        :`Z = <b>${rhp.length}</b>：<span class="unstable">闭环不稳定</span>${rhpOpen?"（以闭环极点直接判定为准）":"（曲线包围临界点）"}`,
+      `开环极点 P = <b>${den.length-1}</b> 个（右半平面 ${rhpOpen} 个）`,
       `|G| 最大显示半径 = <b>${R.toFixed(1)}</b>（超出截断）`,
     ]);
   }
@@ -646,7 +649,8 @@ function setChips(id,items){const box=document.getElementById(id);box.innerHTML=
       `开环极点 n = <b>${poles.length}</b>，零点 m = <b>${zeros.length}</b>`,
       poles.length<=zeros.length||allStable?`全 K 范围：<span class="stable">轨迹位于左半平面（闭环恒稳）</span>`
         :`保持闭环稳定的最大 K ≈ <b>${stableMaxK>0?stableMaxK.toFixed(2):"0"}</b>`,
-      `渐近线（n&gt;m 时）：${poles.length-zeros.length} 条，取向角 (2k+1)π/(n−m)`,
+      poles.length>zeros.length?`渐近线：${poles.length-zeros.length} 条，取向角 (2k+1)π/(n−m)`
+        :`n≤m：分支全部终于有限零点，无渐近线`,
       poles.length+zeros.length===0?`点击坐标区放置极点/零点，或点「载入示例」`:`提示：可继续点击添加，最多 8 极点 / 6 零点`,
     ]);
   }
