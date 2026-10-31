@@ -297,7 +297,7 @@ function setChips(id,items){const box=document.getElementById(id);box.innerHTML=
     const N=600, dt=T/N, pts=[];
     let peak=0,tp=0;
     const disc=a1*a1-4*a2;
-    const roots= polyRoots([0,a2,a1,1]).slice(0,2); // s²+a1 s+a2 的根
+    const roots= polyRoots([a2,a1,1]); // s²+a1 s+a2 的根（直接对二次式求根，恒返回 2 个根）
     const distinct=Math.abs(cabs(csub(roots[0],roots[1])))>1e-6;
     let yOf;
     if(distinct){
@@ -377,12 +377,12 @@ function setChips(id,items){const box=document.getElementById(id);box.innerHTML=
     // dy/dt = A x + B u ; y = C x（可控标准型）
     const deriv=(x,u)=>{
       const dx=new Array(n).fill(0);
-      dx[n-1]=u; for(let i=0;i<n-1;i++)dx[n-1]-=a[n-1-i]*x[i]; // dx_{n-1} = u - a1 x_{n-1} - ... 
-      // 标准型： ẋ1=x2, ẋ2=x3, ..., ẋn = u - Σ a_{n-i} x_i
+      dx[n-1]=u; for(let i=0;i<n;i++)dx[n-1]-=a[i]*x[i]; // dx_{n-1} = u - Σ a[i]·x[i]
+      // 标准型：ẋ0=x1, ẋ1=x2, ..., ẋ_{n-1} = u - Σ a[i]·x[i]（a、b 均为升幂系数）
       for(let i=0;i<n-1;i++)dx[i]=x[i+1];
       return dx;
     };
-    const yOf=x=>{let y=0;for(let i=0;i<n;i++)y+=b[n-1-i]*x[i];return y;};
+    const yOf=x=>{let y=0;for(let i=0;i<n;i++)y+=b[i]*x[i];return y;};
     for(let k=0;k<steps;k++){
       const t=k*dt;
       const r=t>=tStep?1:0;
