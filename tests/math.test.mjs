@@ -131,5 +131,16 @@ console.log("\n[PID 被控对象回归：曾因系数索引反转，把 e^-0.2s/
   ok("末 2 s 振荡幅度 < 0.05（非等幅振荡）", osc < 0.05, `实得 ${osc.toFixed(4)}`);
 }
 
+console.log("\n[根轨迹 chip：恒稳结论只信任扫掠求根，不许短路特判]");
+{
+  const src = fs.readFileSync(new URL("../index.html", import.meta.url), "utf-8");
+  const js = src.split(/\r?\n/);
+  const i = js.findIndex((l) => l.includes('setChips("rl-chips"'));
+  const block = i >= 0 ? js.slice(i, i + 8).join("\n") : "";
+  ok("恒稳分支的条件是 allStable（无 n≤m 短路特判）",
+     block.includes("allStable?") && !block.includes("poles.length<=zeros.length||"));
+  ok("n<m 时文案说明分支自无穷远而来", block.includes("自无穷远沿渐近线而来"));
+}
+
 console.log(`\n结果：${pass} 通过 / ${fail} 失败`);
 process.exit(fail ? 1 : 0);

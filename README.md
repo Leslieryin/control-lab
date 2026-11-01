@@ -48,10 +48,11 @@ python -m http.server 8123
 ## 测试
 
 ```bash
-node tests/math.test.mjs
+node tests/math.test.mjs   # 数学断言
+node tests/syntax.test.mjs # 整体内联 script 的语法兜底
 ```
 
-需要 Node ≥ 18（与 CI 矩阵一致；测试用了 top-level await）。
+需要 Node ≥ 18（测试用了 top-level await；CI 矩阵跑 20/22）。
 
 拿有解析解的多项式对拍求根算法——它是根轨迹和 Bode 图的地基，算错了页面不报错、只会静默画出错误的曲线。CI 每次提交都跑一遍：
 

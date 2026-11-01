@@ -177,7 +177,6 @@ const csub=(a,b)=>C(a.re-b.re,a.im-b.im);
 const cmul=(a,b)=>C(a.re*b.re-a.im*b.im, a.re*b.im+a.im*b.re);
 const cdiv=(a,b)=>{const d=b.re*b.re+b.im*b.im;return C((a.re*b.re+a.im*b.im)/d,(a.im*b.re-a.re*b.im)/d);};
 const cabs=a=>Math.hypot(a.re,a.im);
-const conj=a=>C(a.re,-a.im);
 const cpowi=(a,n)=>{let r=C(1,0);for(let i=0;i<n;i++)r=cmul(r,a);return r;};
 
 function polyEvalC(coefLowFirst,s){ // 复数域 Horner（升幂数组）
@@ -327,6 +326,8 @@ function setChips(id,items){const box=document.getElementById(id);box.innerHTML=
       let last=-1;
       for(let i=0;i<=N;i++){const t=pts[i][0],y=pts[i][1];
         if(Math.abs(y-fv)>band/100*fv)last=t;}
+      // 响应到窗口末端仍未进入带宽（如等幅振荡）：未整定，置 -1 让 chip 显示 —
+      if(Math.abs(pts[N][1]-fv)>band/100*fv)last=-1;
       if(band===2)ts2=last;else ts5=last;
     }
     const p=new Plot($("cv-step"));
@@ -340,7 +341,7 @@ function setChips(id,items){const box=document.getElementById(id);box.innerHTML=
     p.line(pts,"#0f6cbd",2.4);
     setChips("step-chips",[
       `超调量 σ% = <b>${sigma.toFixed(1)}%</b>`,
-      `峰值时间 t<sub>p</sub> = <b>${tp.toFixed(2)} s</b>`,
+      `峰值时间 t<sub>p</sub> = <b>${zeta<1?tp.toFixed(2)+"s":"—"}</b>${zeta<1?"":"（无超调）"}`,
       `上升时间(10→90%) t<sub>r</sub> = <b>${t10>0&&t90>0?(t90-t10).toFixed(2):"—"} s</b>`,
       `调节时间 t<sub>s</sub>(2%) = <b>${ts2>=0?ts2.toFixed(2)+"s":"—"}</b>`,
       `t<sub>s</sub>(5%) = <b>${ts5>=0?ts5.toFixed(2)+"s":"—"}</b>`,
@@ -424,7 +425,7 @@ function setChips(id,items){const box=document.getElementById(id);box.innerHTML=
     for(const[t,y]of res.y){if(Math.abs(y-1)>0.02)ts2=t;}
     const tail=res.y.slice(-100);
     ess=Math.abs(1-tail.reduce((s,[,y])=>s+y,0)/tail.length);
-    return{peak,sigma,ts2,ess,fv};
+    return{peak,sigma,ts2,ess};
   }
   function render(){
     const Kp=+$("in-kp").value,Ki=+$("in-ki").value,Kd=+$("in-kd").value;
@@ -503,8 +504,10 @@ function setChips(id,items){const box=document.getElementById(id);box.innerHTML=
       }
     }
     const magLo=Math.min(...mags),magHi=Math.max(...mags);
+    let yLo=Math.max(magLo,-80),yHi=Math.min(magHi,80);
+    if(yHi-yLo<1e-6){yLo-=1;yHi+=1;} // 常数增益输入：幅频为水平线，撑开纵轴避免整幅 NaN
     const pm_=new Plot($("cv-bodemag"));
-    pm_.frame([Math.log10(wMin),Math.log10(wMax)],[Math.max(magLo,-80),Math.min(magHi,80)],
+    pm_.frame([Math.log10(wMin),Math.log10(wMax)],[yLo,yHi],
       {fx:x=>fmt(Math.pow(10,x)),fy:y=>y.toFixed(0)});
     pm_.hline(0,"#b9c5d2");
     pm_.line(ws.map((w,i)=>[Math.log10(w),mags[i]]),"#0f6cbd",2.2);
@@ -647,10 +650,11 @@ function setChips(id,items){const box=document.getElementById(id);box.innerHTML=
       p.text("○",pt.re,pt.im,"#b45309",12,"center");});
     setChips("rl-chips",[
       `开环极点 n = <b>${poles.length}</b>，零点 m = <b>${zeros.length}</b>`,
-      poles.length<=zeros.length||allStable?`全 K 范围：<span class="stable">轨迹位于左半平面（闭环恒稳）</span>`
+      allStable?`扫掠范围（K≈0.01→400）内：<span class="stable">轨迹位于左半平面（闭环恒稳）</span>`
         :`保持闭环稳定的最大 K ≈ <b>${stableMaxK>0?stableMaxK.toFixed(2):"0"}</b>`,
       poles.length>zeros.length?`渐近线：${poles.length-zeros.length} 条，取向角 (2k+1)π/(n−m)`
-        :`n≤m：分支全部终于有限零点，无渐近线`,
+        :poles.length<zeros.length?`n<m：多余分支自无穷远沿渐近线而来（${zeros.length-poles.length} 支），其余终于有限零点`
+        :`n=m：分支全部终于有限零点`,
       poles.length+zeros.length===0?`点击坐标区放置极点/零点，或点「载入示例」`:`提示：可继续点击添加，最多 8 极点 / 6 零点`,
     ]);
   }
