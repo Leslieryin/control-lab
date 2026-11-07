@@ -26,6 +26,7 @@ jobs:
       - name: 运行测试
         run: |
           node tests/math.test.mjs
+          node tests/extras.test.mjs
           node tests/syntax.test.mjs
 
   offline:

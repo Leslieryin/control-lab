@@ -61,6 +61,11 @@ footer{max-width:1060px;margin:0 auto;padding:0 16px 30px;color:var(--muted);fon
     <button data-t="bode">Bode 图</button>
     <button data-t="nyq">Nyquist 图</button>
     <button data-t="rl">根轨迹</button>
+    <button data-t="bdrag">Bode 裕度游乐场</button>
+    <button data-t="nyqa">Nyquist 围线动画</button>
+    <button data-t="rlk">根轨迹 · 增益滑块</button>
+    <button data-t="rocket">PID 救火箭</button>
+    <button data-t="disc">采样与数字 PID</button>
   </nav>
 </header>
 
@@ -165,6 +170,121 @@ footer{max-width:1060px;margin:0 auto;padding:0 16px 30px;color:var(--muted);fon
   </div>
 </section>
 
+<!-- ============ 实验 6:Bode 裕度游乐场 ============ -->
+<section id="tab-bdrag">
+  <div class="panel">
+    <h2>Bode 裕度游乐场:拖零极点,看裕度实时变化</h2>
+    <p class="hint">上图点击放置 / 拖动开环零极点(极点 <b style="color:#0f6cbd">×</b>、零点 <b style="color:#d97706">○</b>;Shift+点击放共轭对;「删除模式」点标记移除,共轭对成对删)。开环 L(s) = K·∏(s−z<sub>i</sub>) / ∏(s−p<sub>j</sub>),拖 K 滑块,下方 Bode 图与裕度立即重算。</p>
+    <div class="btns">
+      <button id="bm-pole" class="on">放置极点 ×</button>
+      <button id="bm-zero">放置零点 ○</button>
+      <button id="bm-del">删除模式</button>
+      <button id="bm-clr">清空</button>
+      <button id="bm-demo">载入示例 25/((s+1)(s+2)(s+5))</button>
+    </div>
+    <div class="ctrls">
+      <div class="ctrl"><label>增益 K(对数)<b id="v-bmk"></b></label>
+        <input type="range" id="in-bmk" min="0" max="2.6" step="0.01" value="1.4"></div>
+    </div>
+    <div class="chips" id="bm-chips"></div>
+    <canvas id="cv-pz" height="300"></canvas>
+    <div class="plotwrap"><canvas id="cv-bmmag" height="200"></canvas></div>
+    <div class="plotwrap"><canvas id="cv-bmph" height="170"></canvas></div>
+    <p class="note">看点:把一个极点拖向虚轴,相位在更低频就开始下坠,γ 被一口口吃掉;加一个零点(放在极点左边)相当于 PD/超前补偿,γ 回血——教材第 7、8 章的几何直觉,这里是它的频域版本。</p>
+  </div>
+</section>
+
+<!-- ============ 实验 7:Nyquist 围线动画 ============ -->
+<section id="tab-nyqa">
+  <div class="panel">
+    <h2>Nyquist 围线动画:D 形围线如何扫出幅相曲线</h2>
+    <p class="hint">左:s 平面上的 D 形围线(沿 jω 轴自 −jR 上行,再经右半大半圆顺时针闭合),动画点沿围线巡游;右:映射点同步在 L 平面描出 Nyquist 曲线。围线内的开环极点信息,全部编码进「曲线绕 (−1, j0) 的圈数」。</p>
+    <div class="ctrls">
+      <div class="ctrl"><label>分子 N(s) 系数</label><input type="text" id="in-numa" value="12"></div>
+      <div class="ctrl"><label>分母 D(s) 系数</label><input type="text" id="in-dena" value="6, 11, 6, 1"></div>
+      <div class="ctrl"><label>K 倍率 <b id="v-nyak"></b></label>
+        <input type="range" id="in-nyak" min="0.2" max="6" step="0.05" value="1"></div>
+    </div>
+    <div class="btns">
+      <button id="nyqa-apply">绘 制</button>
+      <button id="nyqa-play" class="on">⏸ 暂停</button>
+      <button id="nyqa-restart">↻ 重新扫描</button>
+    </div>
+    <div class="chips" id="nyqa-chips"></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <canvas id="cv-splane" height="330" style="flex:1;min-width:260px"></canvas>
+      <canvas id="cv-lplane" height="330" style="flex:1;min-width:260px"></canvas>
+    </div>
+    <p class="note">圈数 N 由 arg(L+1) 沿围线的净变化除以 2π(顺时针为正),Z = N + P。默认示例即教材例 6.1:L=12/((s+1)(s+2)(s+3));把 K 拖过 5,看曲线膨胀、穿过 −1 的瞬间——劳斯给出的临界增益 60 与之精确一致。</p>
+  </div>
+</section>
+
+<!-- ============ 实验 8:根轨迹 · 增益滑块 ============ -->
+<section id="tab-rlk">
+  <div class="panel">
+    <h2>根轨迹 · 增益滑块:拖 K,看极点沿轨迹跑</h2>
+    <p class="hint">灰点云是完整根轨迹(K 对数扫掠,暖色 = 大 K);彩色大点是当前 K 的闭环极点(绿 = 左半平面、红 = 右半平面、橙色圈 = 踩上虚轴),右图同步显示此刻的闭环阶跃响应。点击画布可自定义零极点(Shift+点击放共轭对)。</p>
+    <div class="btns">
+      <button id="rk2-pole" class="on">放置极点 ×</button>
+      <button id="rk2-zero">放置零点 ○</button>
+      <button id="rk2-demo">载入示例 K/((s+1)(s²+2s+5))</button>
+      <button id="rk2-clr">清空</button>
+    </div>
+    <div class="ctrls">
+      <div class="ctrl"><label>增益 K <b id="v-rkk"></b></label>
+        <input type="range" id="in-rkk" min="0" max="40" step="0.05" value="4"></div>
+    </div>
+    <div class="chips" id="rk-chips"></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <canvas id="cv-rlk" height="380" style="flex:1.4;min-width:300px"></canvas>
+      <canvas id="cv-rlkt" height="380" style="flex:1;min-width:240px"></canvas>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 实验 9:PID 救火箭 ============ -->
+<section id="tab-rocket">
+  <div class="panel">
+    <h2>PID 救火箭:调 K<sub>p</sub>/K<sub>i</sub>/K<sub>d</sub>,软着陆</h2>
+    <p class="hint">火箭从 100 m 高空下落,推力 u = PID(高度误差)只能向上喷(0 ≤ u ≤ 30 m/s²),g = 9.8 m/s²。误差 e = −高度:K<sub>p</sub> 催落(目标就是地面)、K<sub>d</sub> 刹车保平安、K<sub>i</sub> 在攒「催落」的账多半帮倒忙——滑块可以在下落途中实时拧!</p>
+    <div class="ctrls">
+      <div class="ctrl"><label>K<sub>p</sub> <b id="v-rkp"></b></label>
+        <input type="range" id="in-rkp" min="0" max="3" step="0.05" value="1.5"></div>
+      <div class="ctrl"><label>K<sub>i</sub> <b id="v-rki"></b></label>
+        <input type="range" id="in-rki" min="0" max="1" step="0.02" value="0"></div>
+      <div class="ctrl"><label>K<sub>d</sub> <b id="v-rkd"></b></label>
+        <input type="range" id="in-rkd" min="0" max="8" step="0.1" value="6"></div>
+    </div>
+    <div class="btns">
+      <button id="rk-start">🚀 开始下落</button>
+      <button id="rk-reset">↺ 复位</button>
+    </div>
+    <div class="chips" id="rocket-chips"></div>
+    <canvas id="cv-rocket" height="420"></canvas>
+    <p class="note">评分:|v| &lt; 1.5 m/s 完美着陆 ★★★;&lt; 3 m/s 成功 ★★;&lt; 6 m/s 硬着陆 ★(箭体损伤);再大就是烟花。挑战:先拖 K<sub>d</sub> = 0 体验自由落体,再半路把它救回来。</p>
+  </div>
+</section>
+
+<!-- ============ 实验 10:采样与数字 PID ============ -->
+<section id="tab-disc">
+  <div class="panel">
+    <h2>采样与数字 PID:ZOH 离散闭环(教材第 13 章 · 实验 10)</h2>
+    <p class="hint">对象 G(s) = 1/(s+1),零阶保持,采样周期 T。数字控制器 u<sub>k</sub> = K<sub>p</sub>e<sub>k</sub> + K<sub>i</sub>T·Σe<sub>j</sub>(后向矩形积分;K<sub>i</sub> = 0 即纯比例)。圆点为采样序列,灰虚线为同 K<sub>p</sub> 的连续闭环对照,z 平面显示闭环极点。</p>
+    <div class="ctrls">
+      <div class="ctrl"><label>采样周期 T (s) <b id="v-dt"></b></label>
+        <input type="range" id="in-dt" min="0.1" max="2" step="0.01" value="1"></div>
+      <div class="ctrl"><label>K<sub>p</sub> <b id="v-dkp"></b></label>
+        <input type="range" id="in-dkp" min="0.05" max="5" step="0.05" value="1"></div>
+      <div class="ctrl"><label>K<sub>i</sub> <b id="v-dki"></b></label>
+        <input type="range" id="in-dki" min="0" max="4" step="0.05" value="0"></div>
+    </div>
+    <div class="chips" id="disc-chips"></div>
+    <div class="plotwrap"><canvas id="cv-disc" height="280"></canvas></div>
+    <div class="plotwrap"><canvas id="cv-discz" height="320" style="width:460px;max-width:100%"></canvas></div>
+    <p class="note">读法:T=1、K<sub>p</sub>=1 时序列应为 0.632 → 0.465 → 0.509…(教材例 13.1,「隔拍振铃」);闭环极点滑上负实轴 = 振铃,撞上单位圆 = 发散,K<sub>c</sub> = (1+e<sup>−T</sup>)/(1−e<sup>−T</sup>)。数字 PI 的稳定域是三角形:K<sub>i</sub> &lt; (2/T)(K<sub>c</sub> − K<sub>p</sub>),对照教材例 13.2(K<sub>p</sub>=1、T=1 时 K<sub>i</sub> &lt; 2.33)。</p>
+  </div>
+</section>
+
 </main>
 <footer>自动控制原理交互实验台 · 单文件离线可用 · MIT License · 由 Leslieryin 维护</footer>
 
@@ -208,6 +328,121 @@ function polyRoots(a){ // 实系数（升幂）→ 复根数组，Durand-Kerner
   return roots.map(r=>Math.abs(r.im)<1e-7?C(r.re,0):r);
 }
 const parseCoefs=t=>t.split(/[,，\s]+/).filter(x=>x!=="").map(Number).filter(x=>!isNaN(x));
+
+/* ============ 纯函数区:实验 6—10(可测数学核心,无 DOM) ============ */
+// 由复根数组(共轭成对)构造实系数升幂多项式
+function buildRealPoly(roots){
+  let p=[C(1,0)];
+  for(const r of roots){
+    const out=new Array(p.length+1).fill(0).map(()=>C(0,0));
+    for(let i=0;i<p.length;i++){
+      out[i+1]=cadd(out[i+1],p[i]);
+      out[i]=cadd(out[i],cmul(C(-r.re,-r.im),p[i]));
+    }
+    p=out;
+  }
+  return p.map(c=>Math.abs(c.im)<1e-7?c.re:NaN);
+}
+// 对数扫频 Bode 数据(升幂 num/den;相位解卷绕)
+function bodeSweep(num,den,wMin,wMax,M){
+  const ws=[],mags=[],phases=[];let prev=null;
+  for(let i=0;i<=M;i++){
+    const w=wMin*Math.pow(wMax/wMin,i/M);
+    const G=cdiv(polyEvalC(num,C(0,w)),polyEvalC(den,C(0,w)));
+    const magDB=20*Math.log10(Math.max(cabs(G),1e-12));
+    let ph=(G.re===0&&G.im===0)?0:Math.atan2(G.im,G.re)*180/Math.PI;
+    if(prev!==null){while(ph-prev>180)ph-=360;while(ph-prev<-180)ph+=360;}
+    prev=ph;ws.push(w);mags.push(magDB);phases.push(ph);
+  }
+  return{ws,mags,phases};
+}
+// 穿越:首个 0 dB 穿越(ωgc/PM)与首个 −180° 穿越(ωpc/GM,dB)
+function marginCrossings(ws,mags,phases){
+  let wgc=null,pm=null,wpc=null,gm=null;
+  for(let i=1;i<ws.length;i++){
+    if(wgc===null&&mags[i-1]>0&&mags[i]<=0){wgc=ws[i];pm=180+phases[i];}
+    const c1=phases[i-1]+180,c2=phases[i]+180;
+    if(wpc===null&&((c1>0&&c2<=0)||(c1<0&&c2>=0))){
+      if(Math.abs(c1)<360&&Math.abs(c2)<360){wpc=ws[i];gm=-mags[i];}
+    }
+  }
+  return{wgc,pm,wpc,gm};
+}
+// D 形围线(jω 轴自 −jR 上行至 +jR,再经右半大半圆顺时针闭合)映射到 L 平面。
+// 返回完整映射路径 pts、s 域围线 spath,以及绕 −1 的顺时针圈数 N(逆时针为负)。
+function nyquistContourData(num,den,K,R,M){
+  const pts=[],spath=[];let ang=0,started=false;
+  const feed=s=>{
+    spath.push([s.re,s.im]);
+    const L=cmul(C(K,0),cdiv(polyEvalC(num,s),polyEvalC(den,s)));
+    const z=cadd(L,C(1,0)); // F = 1+L:L 绕 −1 的圈数 ⇔ F 绕原点的圈数
+    if(cabs(z)>1e-9){
+      const a=Math.atan2(z.im,z.re);
+      if(started){let d=a-ang;while(d>Math.PI)d-=2*Math.PI;while(d<-Math.PI)d+=2*Math.PI;ang+=d;}
+      else{ang=a;started=true;}
+    }
+    pts.push([L.re,L.im]);
+  };
+  for(let i=0;i<=M;i++)feed(C(0,-R+2*R*i/M));
+  for(let i=1;i<=M;i++){const th=Math.PI/2-Math.PI*i/M;feed(C(R*Math.cos(th),R*Math.sin(th)));}
+  return{pts,spath,N:-ang/(2*Math.PI)}; // 围线顺时针行进,arg 每顺时针绕一圈减 2π,取负号计正
+}
+// 实验 10:对象 1/(s+1) + 零阶保持;lam = e^{−T}
+const lamOf=T=>Math.exp(-T);
+const kcZOH=lam=>(1+lam)/(1-lam); // 纯比例临界增益(z=−1)
+function discreteChar(lam,T,Kp,Ki){ // 数字 PI(后向矩形)闭环:z²+a1·z+a0
+  return[-(1+lam)+(1-lam)*(Kp+Ki*T),lam-(1-lam)*Kp];
+}
+function discreteRoots(lam,T,Kp,Ki){
+  if(Ki===0)return polyRoots([(1-lam)*Kp-lam,1]); // 纯比例:一阶特征 z+[(1−lam)Kp−lam]=0(PI 式在 Ki=0 时会多出待消的 z=1 控制器极点)
+  const[a1,a0]=discreteChar(lam,T,Kp,Ki);
+  return polyRoots([a0,a1,1]);
+}
+function discreteSim(lam,T,Kp,Ki,n){ // 单位阶跃采样序列 y_0..y_n(y_0=0,精确 ZOH 递推)
+  const y=[0];let I=0;
+  for(let k=0;k<n;k++){
+    const e=1-y[k];
+    I+=Ki*T*e;
+    y.push(lam*y[k]+(1-lam)*(Kp*e+I));
+  }
+  return y;
+}
+// 极点列表 → 共轭对合并的短字符串(chips 显示用)
+function fmtRootsCN(rs){
+  const used=new Array(rs.length).fill(false),out=[];
+  for(let i=0;i<rs.length;i++){
+    if(used[i])continue;
+    const r=rs[i];
+    if(Math.abs(r.im)>1e-6){
+      const j=rs.findIndex((q,k)=>!used[k]&&Math.abs(q.re-r.re)<1e-6&&Math.abs(q.im+r.im)<1e-6);
+      if(j>i){used[j]=true;out.push(fmt(r.re)+"±"+fmt(Math.abs(r.im))+"j");continue;}
+    }
+    out.push(fmt(r.re));
+  }
+  return out.join("、");
+}
+// 实验 9:火箭(1D 垂直)。e = −高度(目标地面),推力限幅 0..umax 只向上
+function rocketPID(e,integ,ePrev,Kp,Ki,Kd,dt,umax){
+  const uRaw=Kp*e+Ki*integ+Kd*(e-ePrev)/dt;
+  return Math.max(0,Math.min(umax,uRaw));
+}
+function simulateLanding(Kp,Ki,Kd,opt={}){
+  const g=opt.g??9.8,umax=opt.umax??30,dt=opt.dt??0.01,T=opt.T??120,h=opt.h??100;
+  let y=h,v=0,integ=0,ePrev=-h,u=0,t=0;
+  const log=[];
+  while(t<T-1e-12){
+    const e=-y;
+    integ=Math.max(-40,Math.min(40,integ+e*dt)); // 积分限幅(防深度负饱和)
+    u=rocketPID(e,integ,ePrev,Kp,Ki,Kd,dt,umax);
+    v+=(u-g)*dt;
+    y+=v*dt;
+    t+=dt;
+    log.push([t,y,v,u]);
+    ePrev=e;
+    if(y<=0){y=0;break;}
+  }
+  return{landed:y<=0,vImpact:y<=0?Math.abs(v):null,t,log};
+}
 
 /* ============ 画布工具（HiDPI + 坐标系） ============ */
 function setupCanvas(cv){
@@ -607,19 +842,7 @@ function setChips(id,items){const box=document.getElementById(id);box.innerHTML=
 (function(){
   const $=id=>document.getElementById(id);
   let poles=[],zeros=[],mode="pole";
-  function buildRealPoly(roots){ // 假定复根严格共轭成对出现，返回升幂实系数数组
-    let p=[C(1,0)];
-    for(const r of roots){
-      const out=new Array(p.length+1).fill(0).map(()=>C(0,0));
-      for(let i=0;i<p.length;i++){
-        out[i+1]=cadd(out[i+1],p[i]);
-        out[i]=cadd(out[i],cmul(C(-r.re,-r.im),p[i]));
-      }
-      p=out;
-    }
-    return p.map(c=>Math.abs(c.im)<1e-7?c.re:NaN);
-  }
-  function charPoly(K){ // D + K·N（升幂实数组）
+  function charPoly(K){ // D + K·N（升幂实数组；buildRealPoly 已上移至纯函数区）
     const D=buildRealPoly(poles),N=buildRealPoly(zeros);
     const L=Math.max(D.length,N.length);
     const out=new Array(L).fill(0);
@@ -681,6 +904,452 @@ function setChips(id,items){const box=document.getElementById(id);box.innerHTML=
   $("m-del").onclick=()=>{if(mode==="pole")poles.pop();else zeros.pop();render();};
   $("m-clr").onclick=()=>{poles=[];zeros=[];render();};
   $("m-demo").onclick=()=>{poles=[C(-1,0),C(-1,2),C(-1,-2)];zeros=[];render();};
+  window.addEventListener("resize",render);
+  render();
+})();
+
+/* ============ 实验 6：Bode 裕度游乐场 ============ */
+(function(){
+  const $=id=>document.getElementById(id);
+  let poles=[C(-1,0),C(-2,0),C(-5,0)],zeros=[],mode="pole",drag=null,pzPlot=null;
+  const XR=[-8,4],YR=[-5,5];
+  function px2data(px,py){
+    const w=pz.cv.clientWidth,h=pz.cv.clientHeight;
+    const x=XR[0]+(px-pz.padL)/(w-pz.padL-pz.padR)*(XR[1]-XR[0]);
+    const y=YR[0]+(h-pz.padB-py)/(h-pz.padT-pz.padB)*(YR[1]-YR[0]);
+    return[x,y];
+  }
+  function render(){
+    const K=Math.pow(10,+$("in-bmk").value);
+    $("v-bmk").textContent=fmt(K);
+    const num=buildRealPoly(zeros).map(v=>v*K);
+    const den=buildRealPoly(poles);
+    // 零极点图（左半平面浅绿着色）
+    const p=new Plot($("cv-pz"));
+    pzPlot=p;
+    p.frame(XR,YR,{nx:4,ny:4});
+    p.ctx.fillStyle="rgba(21,128,61,.07)";
+    p.ctx.fillRect(p.padL,p.padT,p.X(0)-p.padL,p.h-p.padT-p.padB);
+    p.vline(0,"#b9c5d2");p.hline(0,"#b9c5d2");
+    p.text("← 左半平面（稳定贡献）",-7.7,4.5,"#15803d",10);
+    poles.forEach(pt=>{p.dot(pt.re,pt.im,"#0f6cbd",7);p.text("×",pt.re,pt.im,"#fff",12,"center");});
+    zeros.forEach(pt=>{p.dot(pt.re,pt.im,"#d97706",7);p.text("○",pt.re,pt.im,"#fff",11,"center");});
+    // Bode 与裕度
+    const{ws,mags,phases}=bodeSweep(num,den,1e-2,1e3,700);
+    const{wgc,pm,wpc,gm}=marginCrossings(ws,mags,phases);
+    const lx0=Math.log10(1e-2),lx1=Math.log10(1e3);
+    const pm_=new Plot($("cv-bmmag"));
+    const yLo=Math.max(Math.min(...mags),-80),yHi=Math.min(Math.max(...mags),80);
+    pm_.frame([lx0,lx1],[(isFinite(yLo)?yLo:-20)-2,(isFinite(yHi)?yHi:20)+2],{fx:x=>fmt(Math.pow(10,x)),fy:y=>y.toFixed(0)});
+    pm_.hline(0,"#b9c5d2");
+    pm_.line(ws.map((w,i)=>[Math.log10(w),mags[i]]),"#0f6cbd",2);
+    if(wgc)pm_.dot(Math.log10(wgc),0,"#d97706",4);
+    pm_.text("幅频 |L| / dB",lx0+0.05,Math.min(yHi,60),"#8a97a5",10);
+    const pp_=new Plot($("cv-bmph"));
+    const phLo=Math.min(...phases),phHi=Math.max(...phases);
+    pp_.frame([lx0,lx1],[phLo-15,Math.min(phHi+15,60)],{fx:x=>fmt(Math.pow(10,x)),fy:y=>y.toFixed(0)});
+    pp_.hline(-180,"#b9c5d2");
+    pp_.line(ws.map((w,i)=>[Math.log10(w),phases[i]]),"#0f6cbd",2);
+    if(wpc)pp_.dot(Math.log10(wpc),-180,"#d97706",4);
+    pp_.text("相频 ∠L / (°)",lx0+0.05,Math.min(phHi+8,45),"#8a97a5",10);
+    const denC=den.map((v,i)=>v+(num[i]||0));
+    const stable=polyRoots(denC).every(r=>r.re<0);
+    setChips("bm-chips",[
+      `K = <b>${fmt(K)}</b>（极点 ${poles.length}、零点 ${zeros.length}）`,
+      wgc?`ω<sub>c</sub> = <b>${fmt(wgc)}</b> rad/s，γ = <b>${pm.toFixed(1)}°</b>`:"未穿越 0 dB：γ = —",
+      wpc?`ω<sub>−180</sub> = <b>${fmt(wpc)}</b> rad/s，h = <b>${gm.toFixed(1)} dB</b>`:"h = ∞（相位未到 −180°）",
+      stable?`闭环：<span class="stable">稳定</span>`:`闭环：<span class="unstable">不稳定</span>`,
+    ]);
+  }
+  const pz=$("cv-pz");
+  pz.style.cursor="crosshair";
+  pz.addEventListener("pointerdown",ev=>{
+    if(!pzPlot)return;
+    const rect=pz.getBoundingClientRect();
+    const px=ev.clientX-rect.left,py=ev.clientY-rect.top;
+    const near=(arr,i)=>{
+      const pt=arr[i];
+      const dx=px-pzPlot.X(pt.re),dy=py-pzPlot.Y(pt.im);
+      return dx*dx+dy*dy<18*18;
+    };
+    if(mode==="del"){
+      let bi=-1,bk="",bd=1e9;
+      poles.forEach((pt,i)=>{const dx=px-pzPlot.X(pt.re),dy=py-pzPlot.Y(pt.im);if(dx*dx+dy*dy<bd){bd=dx*dx+dy*dy;bi=i;bk="p";}});
+      zeros.forEach((pt,i)=>{const dx=px-pzPlot.X(pt.re),dy=py-pzPlot.Y(pt.im);if(dx*dx+dy*dy<bd){bd=dx*dx+dy*dy;bi=i;bk="z";}});
+      if(bi>=0&&bd<30*30){
+        const arr=bk==="p"?poles:zeros,pt=arr[bi];
+        const rest=arr.filter(q=>Math.abs(q.re-pt.re)>1e-9||Math.abs(Math.abs(q.im)-Math.abs(pt.im))>1e-9);
+        if(bk==="p")poles=rest;else zeros=rest;
+        render();
+      }
+      return;
+    }
+    const arr=mode==="pole"?poles:zeros;
+    let found=-1;
+    arr.forEach((pt,i)=>{if(near(arr,i))found=i;});
+    if(found>=0){drag={kind:mode,i:found};}
+    else if(arr.length<(mode==="pole"?8:6)){
+      const[x,y]=px2data(px,py);
+      if(ev.shiftKey&&Math.abs(y)>0.15)arr.push(C(x,y),C(x,-y));
+      else arr.push(C(x,0));
+      render();
+      drag={kind:mode,i:arr.length-1};
+    }
+  });
+  pz.addEventListener("pointermove",ev=>{
+    if(!drag||!pzPlot)return;
+    const rect=pz.getBoundingClientRect();
+    const[x,y]=px2data(ev.clientX-rect.left,ev.clientY-rect.top);
+    const arr=drag.kind==="pole"?poles:zeros;
+    const pt=arr[drag.i];
+    const mirror=arr.find((q,i)=>i!==drag.i&&Math.abs(q.re-pt.re)<1e-9&&Math.abs(q.im+pt.im)<1e-9);
+    pt.re=x;pt.im=y;
+    if(mirror){mirror.re=x;mirror.im=-y;} // 共轭对锁定镜像
+    render();
+  });
+  ["pointerup","pointerleave"].forEach(t=>pz.addEventListener(t,()=>{drag=null;}));
+  $("bm-pole").onclick=()=>{mode="pole";$("bm-pole").classList.add("on");$("bm-zero").classList.remove("on");$("bm-del").classList.remove("on");};
+  $("bm-zero").onclick=()=>{mode="zero";$("bm-zero").classList.add("on");$("bm-pole").classList.remove("on");$("bm-del").classList.remove("on");};
+  $("bm-del").onclick=()=>{mode="del";$("bm-del").classList.add("on");$("bm-pole").classList.remove("on");$("bm-zero").classList.remove("on");};
+  $("bm-clr").onclick=()=>{poles=[];zeros=[];render();};
+  $("bm-demo").onclick=()=>{poles=[C(-1,0),C(-2,0),C(-5,0)];zeros=[];$("in-bmk").value="1.4";render();};
+  $("in-bmk").addEventListener("input",render);
+  window.addEventListener("resize",render);
+  render();
+})();
+
+/* ============ 实验 7：Nyquist 围线动画 ============ */
+(function(){
+  const $=id=>document.getElementById(id);
+  let data=null,idx=0,playing=true;
+  function rebuild(keepRatio){
+    const num=parseCoefs($("in-numa").value),den=parseCoefs($("in-dena").value);
+    if(!num.length||!den.length){setChips("nyqa-chips",["请输入有效的多项式系数"]);return;}
+    if(num.length>den.length){setChips("nyqa-chips",["请输入真分式（分子次数 ≤ 分母次数）"]);return;}
+    const K=+$("in-nyak").value;
+    $("v-nyak").textContent=K.toFixed(2);
+    const openRoots=polyRoots(den);
+    let maxIm=1;for(const r of openRoots)maxIm=Math.max(maxIm,Math.abs(r.im));
+    const R=Math.max(2.5,maxIm*1.6+0.8);
+    data=nyquistContourData(num,den,K,R,800);
+    data.R=R;data.K=K;data.P=openRoots.filter(r=>r.re>=0).length;
+    if(!keepRatio)idx=0;
+    drawAll();
+    const closed=polyRoots(den.map((v,i)=>v+num[i]*K));
+    const Zr=closed.filter(r=>r.re>=0).length;
+    const Nint=Math.round(data.N);
+    const Nshow=Math.abs(data.N-Nint)<0.05?Nint:Number(data.N.toFixed(2));
+    setChips("nyqa-chips",[
+      `圈数 N = <b>${Nshow}</b>（顺时针为正）`,
+      `开环右半平面极点 P = <b>${data.P}</b>`,
+      `理论 Z = N + P = <b>${typeof Nshow==="number"&&Number.isFinite(Nshow)?Nshow+data.P:data.N+data.P}</b>`,
+      `闭环求根：右半平面 <b>${Zr}</b> 个 → ${Zr===0?'<span class="stable">稳定</span>':'<span class="unstable">不稳定</span>'}`,
+      `映射峰值 |L| ≈ <b>${fmt(data.pts.reduce((m,p)=>Math.max(m,Math.hypot(p[0],p[1])),0))}</b>`,
+    ]);
+  }
+  function drawAll(){
+    if(!data)return;
+    const sp=$("cv-splane"),lp=$("cv-lplane");
+    if(!sp.clientWidth||!lp.clientWidth)return; // 标签页隐藏时不画
+    const R=data.R;
+    const p=new Plot(sp);
+    p.frame([-0.8,R+1.2],[-R-0.5,R+0.5],{nx:4,ny:4});
+    p.line(data.spath,"#c9d4e0",1.2);
+    const head=data.spath[Math.min(idx,data.spath.length-1)];
+    p.dot(head[0],head[1],"#0f6cbd",5);
+    p.text("jω 轴",-0.7,R*0.86,"#8a97a5",10);
+    p.text("大半圆（R→∞）",R*0.7,R*0.55,"#8a97a5",10,"center");
+    const q=new Plot(lp);
+    q.frame([-2.6,2.6],[-1.8,1.8],{nx:4,ny:4});
+    q.ctx.save();q.ctx.beginPath();q.ctx.rect(q.padL,q.padT,q.w-q.padL-q.padR,q.h-q.padT-q.padB);q.ctx.clip();
+    const circ=[];for(let a=0;a<=6.3;a+=0.05)circ.push([Math.cos(a),Math.sin(a)]);
+    q.line(circ,"#c9d4e0",1,[4,4]);
+    q.line(data.pts.slice(idx+1),"#dbe3ec",1);
+    q.line(data.pts.slice(0,idx+1),"#0f6cbd",2.2);
+    q.dot(-1,0,"#d97706",5);
+    q.text("(−1, j0)",-1,-1.6,"#b45309",11,"center");
+    const hd=data.pts[Math.min(idx,data.pts.length-1)];
+    q.dot(hd[0],hd[1],"#d97706",4);
+    q.ctx.restore();
+  }
+  function tick(){
+    if(playing&&data){
+      idx+=3;
+      if(idx>=data.pts.length)idx=0;
+      drawAll();
+    }
+    scheduleTick();
+  }
+  // rAF 在后台/被节流的页面里可能永不触发或稀疏触发:若 250ms 内没有泵送过,永久降级为定时器
+  let tickMode="raf",lastTickPump=0;
+  function tick(){
+    lastTickPump=performance.now();
+    if(playing&&data){
+      idx+=3;
+      if(idx>=data.pts.length)idx=0;
+      drawAll();
+    }
+    scheduleTick();
+  }
+  function scheduleTick(){
+    if(tickMode==="raf"){
+      requestAnimationFrame(()=>{if(tickMode==="raf")tick();});
+      setTimeout(()=>{
+        if(tickMode==="raf"&&performance.now()-lastTickPump>250){tickMode="timer";tick();}
+      },250);
+    }else{
+      setTimeout(tick,33);
+    }
+  }
+  scheduleTick();
+  $("nyqa-apply").onclick=()=>rebuild(false);
+  $("nyqa-play").onclick=()=>{playing=!playing;$("nyqa-play").textContent=playing?"⏸ 暂停":"▶ 播放";};
+  $("nyqa-restart").onclick=()=>{idx=0;};
+  $("in-nyak").addEventListener("input",()=>rebuild(true));
+  ["in-numa","in-dena"].forEach(id=>$(id).addEventListener("change",()=>rebuild(false)));
+  window.addEventListener("resize",()=>drawAll());
+  rebuild(false);
+})();
+
+/* ============ 实验 8：根轨迹 · 增益滑块 ============ */
+(function(){
+  const $=id=>document.getElementById(id);
+  let poles=[C(-1,0),C(-1,2),C(-1,-2)],zeros=[],cloud=[],demoOn=true,mode="pole";
+  function charPoly(K){
+    const D=buildRealPoly(poles),N=buildRealPoly(zeros);
+    const L=Math.max(D.length,N.length);
+    const out=new Array(L).fill(0);
+    for(let i=0;i<L;i++)out[i]=(D[i]||0)+K*(N[i]||0);
+    return out;
+  }
+  function rebuildCloud(){
+    cloud=[];
+    const NK=240;
+    for(let i=0;i<NK;i++){
+      const K=Math.pow(10,-2+4.6*i/NK);
+      for(const r of polyRoots(charPoly(K)))cloud.push([r.re,r.im,215-215*i/NK]);
+    }
+  }
+  function render(){
+    const K=+$("in-rkk").value;
+    $("v-rkk").textContent=K.toFixed(2);
+    const p=new Plot($("cv-rlk"));
+    p.frame([-6,6],[-5,5],{nx:6,ny:4});
+    p.vline(0,"#b9c5d2");p.hline(0,"#b9c5d2");
+    for(const[x,y,hue]of cloud)p.dot(x,y,`hsl(${hue},72%,55%)`,1.7);
+    poles.forEach(pt=>{p.dot(pt.re,pt.im,"#0f6cbd",6);p.text("×",pt.re,pt.im,"#fff",11,"center");});
+    zeros.forEach(pt=>{p.dot(pt.re,pt.im,"#ffffff",6);p.text("○",pt.re,pt.im,"#b45309",11,"center");});
+    const roots=polyRoots(charPoly(Math.max(K,1e-4)));
+    for(const r of roots)if(Math.abs(r.re)<0.03)p.dot(r.re,r.im,"rgba(217,119,6,.45)",11);
+    for(const r of roots)p.dot(r.re,r.im,r.re<0?"#15803d":"#b91c1c",5);
+    // 右图：当前 K 的闭环阶跃响应（可控标准型 RK4）
+    const q=new Plot($("cv-rlkt"));
+    const stable=roots.every(r=>r.re<0);
+    let peak=0;
+    if(stable){
+      const num=buildRealPoly(zeros).map(v=>v*K);
+      const den=charPoly(K);
+      const n=den.length-1;
+      const b=num.map(v=>v/den[n]);
+      const a=den.map(v=>v/den[n]);
+      const T=8,dt=0.004,steps=Math.round(T/dt);
+      const x=new Array(n).fill(0);
+      const deriv=(xv,uv)=>{const dx=new Array(n).fill(0);dx[n-1]=uv;for(let i=0;i<n;i++)dx[n-1]-=a[i]*xv[i];for(let i=0;i<n-1;i++)dx[i]=xv[i+1];return dx;};
+      const yOf=xv=>{let y=0;for(let i=0;i<n;i++)y+=b[i]*xv[i];return y;};
+      const fv=num[0]/den[0];
+      const pts=[];
+      for(let k=0;k<=steps;k++){
+        pts.push([k*dt,yOf(x)]);
+        const k1=deriv(x,1),x2=x.map((v,i)=>v+dt/2*k1[i]);
+        const k2=deriv(x2,1),x3=x.map((v,i)=>v+dt/2*k2[i]);
+        const k3=deriv(x3,1),x4=x.map((v,i)=>v+dt*k3[i]);
+        const k4=deriv(x4,1);
+        for(let i=0;i<n;i++)x[i]+=dt/6*(k1[i]+2*k2[i]+2*k3[i]+k4[i]);
+      }
+      for(const[,yv]of pts)peak=Math.max(peak,yv);
+      q.frame([0,T],[Math.min(-0.05,fv*0.8),Math.max(peak*1.15,fv*1.15,0.2)]);
+      q.hline(fv,"#c9d4e0");
+      q.line(pts,"#0f6cbd",2);
+      q.text("闭环阶跃响应（当前 K）",T*0.97,fv*0.92,"#8a97a5",10,"right");
+    }else{
+      q.frame([0,8],[0,1]);
+      q.text("闭环不稳定：响应发散",4,0.5,"#b91c1c",13,"center");
+    }
+    let dom=null;
+    for(const r of roots)if(Math.abs(r.im)>1e-6&&(!dom||r.re>dom.re))dom=r;
+    const chips=[
+      `当前 K = <b>${K.toFixed(2)}</b>`,
+      `闭环极点：${fmtRootsCN(roots)}`,
+      stable?`<span class="stable">全部极点在左半平面：稳定</span>`:`<span class="unstable">存在右半平面极点：发散</span>`,
+      dom?`主导复极点 ζ ≈ <b>${(-dom.re/Math.hypot(dom.re,dom.im)).toFixed(2)}</b>`:`极点全在实轴：无振荡模态`,
+    ];
+    if(roots.some(r=>Math.abs(r.re)<0.03))chips.push(`<span class="unstable">⚡ 极点踩上虚轴——临界增益！</span>`);
+    if(demoOn&&Math.abs(K-16)<0.2)chips.push(`⚡ K = 16：极点抵达 ±j√7 ≈ ±2.65j——劳斯判据与根轨迹在此握手（教材第 7 章）`);
+    setChips("rk-chips",chips);
+  }
+  const cv=$("cv-rlk");
+  cv.style.cursor="crosshair";
+  cv.addEventListener("click",ev=>{
+    demoOn=false;
+    const rect=cv.getBoundingClientRect();
+    const x=-6+(ev.clientX-rect.left-46)/(rect.width-46-12)*12;
+    const y=5-(ev.clientY-rect.top-10)/(rect.height-10-26)*10;
+    const arr=mode==="pole"?poles:zeros;
+    if(arr.length>=(mode==="pole"?8:6))return;
+    if(ev.shiftKey&&Math.abs(y)>0.15)arr.push(C(x,y),C(x,-y));
+    else arr.push(C(x,0));
+    rebuildCloud();render();
+  });
+  $("rk2-pole").onclick=()=>{mode="pole";$("rk2-pole").classList.add("on");$("rk2-zero").classList.remove("on");};
+  $("rk2-zero").onclick=()=>{mode="zero";$("rk2-zero").classList.add("on");$("rk2-pole").classList.remove("on");};
+  $("rk2-demo").onclick=()=>{poles=[C(-1,0),C(-1,2),C(-1,-2)];zeros=[];demoOn=true;rebuildCloud();render();};
+  $("rk2-clr").onclick=()=>{poles=[];zeros=[];demoOn=false;rebuildCloud();render();};
+  $("in-rkk").addEventListener("input",render);
+  window.addEventListener("resize",render);
+  rebuildCloud();render();
+})();
+
+/* ============ 实验 9：PID 救火箭 ============ */
+(function(){
+  const $=id=>document.getElementById(id);
+  const g=9.8,UMAX=30,H0=100;
+  let st="ready",y=H0,v=0,t=0,integ=0,ePrev=-H0,u=0,fuel=0,best=null;
+  function gains(){return[+$("in-rkp").value,+$("in-rki").value,+$("in-rkd").value];}
+  function verdict(vi){
+    return vi<1.5?`<span class="stable">完美着陆 ★★★（|v| = ${vi.toFixed(2)} m/s）</span>`
+      :vi<3?`<span class="stable">成功着陆 ★★（|v| = ${vi.toFixed(2)} m/s）</span>`
+      :vi<6?`<span class="unstable">硬着陆 ★（|v| = ${vi.toFixed(2)} m/s，箭体损伤）</span>`
+      :`<span class="unstable">💥 坠毁（|v| = ${vi.toFixed(2)} m/s）</span>`;
+  }
+  function draw(){
+    const cv=$("cv-rocket");
+    if(!cv.clientWidth)return;
+    const[Kp,Ki,Kd]=gains();
+    $("v-rkp").textContent=Kp.toFixed(2);$("v-rki").textContent=Ki.toFixed(2);$("v-rkd").textContent=Kd.toFixed(2);
+    const p=new Plot(cv);
+    p.frame([-5,5],[-6,H0+12],{nx:2,ny:5});
+    p.ctx.fillStyle="#8a97a5";
+    p.ctx.fillRect(p.padL,p.Y(0),p.w-p.padL-p.padR,2);
+    p.ctx.fillStyle="rgba(21,128,61,.25)";
+    p.ctx.fillRect(p.X(-2.2),p.Y(0)-3,p.X(2.2)-p.X(-2.2),6);
+    for(let h=0;h<=100;h+=20)p.text(h+" m",-4.85,h+1,"#8a97a5",10);
+    const px=p.X(0),py=p.Y(Math.max(y,0));
+    if(st==="fly"&&u>0.5){
+      p.ctx.fillStyle=`rgba(217,119,6,${0.35+0.65*Math.min(1,u/UMAX)})`;
+      const fl=6+20*u/UMAX;
+      p.ctx.beginPath();p.ctx.moveTo(px-4,py+9);p.ctx.lineTo(px+4,py+9);p.ctx.lineTo(px,py+9+fl);p.ctx.closePath();p.ctx.fill();
+    }
+    p.ctx.fillStyle="#1c2733";
+    p.ctx.beginPath();p.ctx.moveTo(px,py-13);p.ctx.lineTo(px+7,py+9);p.ctx.lineTo(px-7,py+9);p.ctx.closePath();p.ctx.fill();
+    // 速度指示
+    p.text(`v = ${v.toFixed(1)} m/s`,1.0,y+(v>0?-6:10),Math.abs(v)>3?"#b91c1c":"#374b5f",12);
+    const chips=[
+      `状态：${st==="ready"?"待发射":st==="fly"?`下落中 t = ${t.toFixed(1)} s`:"已着陆"}`,
+      `高度 = <b>${Math.max(y,0).toFixed(1)} m</b>`,
+      `速度 = <b>${v.toFixed(1)} m/s</b>`,
+      `油门 u = <b>${u.toFixed(1)}</b>（上限 30）`,
+      `燃料 ∫u dt = <b>${fuel.toFixed(0)}</b>`,
+      best!==null?`最佳纪录 |v| = <b>${best.toFixed(2)} m/s</b>`:`尚无着陆纪录`,
+    ];
+    if(st==="done")chips.push(verdict(Math.abs(v)));
+    if(st==="fly"&&Math.abs(v)>20)chips.push(`<span class="unstable">下降过快！增大 K_d 刹车</span>`);
+    setChips("rocket-chips",chips);
+  }
+  function step(dt){
+    const[Kp,Ki,Kd]=gains();
+    const e=-y;
+    integ=Math.max(-40,Math.min(40,integ+e*dt));
+    u=rocketPID(e,integ,ePrev,Kp,Ki,Kd,dt,UMAX);
+    v+=(u-g)*dt;
+    y+=v*dt;
+    t+=dt;fuel+=u*dt;
+    ePrev=e;
+    if(y<=0){
+      y=0;st="done";
+      best=best===null?Math.abs(v):Math.min(best,Math.abs(v));
+    }
+  }
+  let last=0,loopMode="raf",lastPump=0;
+  function loop(ts){
+    lastPump=performance.now();
+    if(st==="fly"){
+      const dt=Math.min(0.05,(ts-last)/1000||0.016);
+      step(dt);
+    }
+    last=ts;
+    draw();
+    scheduleLoop();
+  }
+  // 同实验 7:rAF 稀疏或冻结(后台节流)时降级为 33ms 定时器,保证游戏可用
+  function scheduleLoop(){
+    if(loopMode==="raf"){
+      requestAnimationFrame(ts=>{if(loopMode==="raf")loop(ts);});
+      setTimeout(()=>{
+        if(loopMode==="raf"&&performance.now()-lastPump>250){loopMode="timer";loop(performance.now());}
+      },250);
+    }else{
+      setTimeout(()=>loop(performance.now()),33);
+    }
+  }
+  scheduleLoop();
+  $("rk-start").onclick=()=>{y=H0;v=0;t=0;integ=0;ePrev=-H0;u=0;fuel=0;st="fly";};
+  $("rk-reset").onclick=()=>{st="ready";y=H0;v=0;t=0;integ=0;u=0;fuel=0;draw();};
+})();
+
+/* ============ 实验 10：采样与数字 PID ============ */
+(function(){
+  const $=id=>document.getElementById(id);
+  function render(){
+    const T=+$("in-dt").value,Kp=+$("in-dkp").value,Ki=+$("in-dki").value;
+    $("v-dt").textContent=T.toFixed(2);$("v-dkp").textContent=Kp.toFixed(2);$("v-dki").textContent=Ki.toFixed(2);
+    const lam=lamOf(T);
+    const y=discreteSim(lam,T,Kp,Ki,13);
+    // 采样序列（杆+点）
+    const p=new Plot($("cv-disc"));
+    p.frame([0,13*T],[-0.06,1.25]);
+    p.hline(1,"#c9d4e0");
+    if(Ki===0){ // 连续对照仅纯比例时同屏（Ki 的连续对照不唯一）
+      const yc=t=>Kp/(Kp+1)*(1-Math.exp(-(Kp+1)*t));
+      p.line(fnline(yc,13*T),"#9aa7b5",1.4,[5,4]);
+      p.text("连续闭环对照",11.6*T,yc(11.6*T)-0.09,"#8a97a5",10,"right");
+    }
+    for(let k=0;k<=13;k++){
+      p.line([[k*T,0],[k*T,y[k]]],"#9db8d2",1);
+      p.dot(k*T,y[k],"#0f6cbd",4.5);
+    }
+    p.text("y(kT) 采样序列",12.9*T,1.18,"#0f6cbd",10,"right");
+    // z 平面
+    const q=new Plot($("cv-discz"));
+    q.frame([-1.7,1.7],[-1.2,1.2],{nx:4,ny:4});
+    q.ctx.save();q.ctx.beginPath();q.ctx.rect(q.padL,q.padT,q.w-q.padL-q.padR,q.h-q.padT-q.padB);q.ctx.clip();
+    const circ=[];for(let a=0;a<=6.3;a+=0.05)circ.push([Math.cos(a),Math.sin(a)]);
+    q.line(circ,"#b9c5d2",1.2);
+    q.line([[-1.7,0],[1.7,0]],"#dbe3ec",1);
+    q.dot(-1,0,"#d97706",5);
+    q.text("z = −1（振铃线端点）",-1,-1.1,"#b45309",9.5,"center");
+    const roots=discreteRoots(lam,T,Kp,Ki);
+    for(const r of roots){
+      q.dot(r.re,r.im,cabs(r)<1?"#0f6cbd":"#b91c1c",6);
+      q.text("×",r.re,r.im,"#fff",10,"center");
+    }
+    q.text("单位圆 = 稳定边界",0.05,1.12,"#8a97a5",9.5,"left");
+    q.ctx.restore();
+    // chips
+    const Kc=kcZOH(lam);
+    const stable=roots.every(r=>cabs(r)<1);
+    const ring=roots.some(r=>r.re<-0.03&&Math.abs(r.im)<1e-6);
+    const kiMax=(2/T)*(Kc-Kp);
+    setChips("disc-chips",[
+      `e<sup>−T</sup> = <b>${lam.toFixed(3)}</b>`,
+      `K<sub>c</sub> = (1+e<sup>−T</sup>)/(1−e<sup>−T</sup>) = <b>${Kc.toFixed(2)}</b>`,
+      `闭环 z 极点：${fmtRootsCN(roots)}`,
+      stable?`<span class="stable">极点在单位圆内：稳定</span>`:`<span class="unstable">极点滑出单位圆：发散</span>`,
+      ring?`<span class="unstable">极点在负实轴：隔拍振铃</span>`:``,
+      Ki>0?`数字 PI：K<sub>i</sub> 上限 ≈ (2/T)(K<sub>c</sub>−K<sub>p</sub>) = <b>${kiMax.toFixed(2)}</b>${Ki<=kiMax?"":' <span class="unstable">（已越线）</span>'}`:`纯比例模式（K<sub>i</sub> = 0）`,
+    ]);
+  }
+  function fnline(f,b){const pts=[];for(let i=0;i<=200;i++){const t=b*i/200;pts.push([t,f(t)]);}return pts;}
+  ["in-dt","in-dkp","in-dki"].forEach(id=>$(id).addEventListener("input",render));
   window.addEventListener("resize",render);
   render();
 })();

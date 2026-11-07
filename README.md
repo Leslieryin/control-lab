@@ -7,17 +7,22 @@
 
 为《自动控制原理》课程的核心概念而设计：与其背公式，不如拖动滑块亲眼看 ζ、K<sub>p</sub>、K<sub>i</sub>、K<sub>d</sub> 改变时曲线如何变化。
 
-> **EN** — A single-file interactive lab for classical control theory: step response, PID, Bode, Nyquist and root locus, all computed locally in your browser. Drag a slider and watch the curve, overshoot and stability margins update. [Try it →](https://leslieryin.github.io/control-lab/)
+> **EN** — A single-file interactive lab for classical control theory: step response, PID, Bode, Nyquist, root locus, plus a drag-the-poles margin playground, a Nyquist D-contour animation, a gain-slider root locus, a PID rocket-landing game and a sampled digital PID bench — all computed locally in your browser. [Try it →](https://leslieryin.github.io/control-lab/)
 
 ![拖动阻尼比 ζ，超调量与调节时间随之实时变化](docs/demo.gif)
 
-## 五个实验
+## 十个实验
 
 - **二阶系统阶跃响应** —— 标准二阶系统 G(s)=Kω<sub>n</sub>²/(s²+2ζω<sub>n</sub>s+ω<sub>n</sub>²) 的单位阶跃响应。拖动 ζ / ω<sub>n</sub> / K，实时显示超调量 σ%、峰值时间、上升时间、调节时间（2%/5%）。
 - **PID 控制器** —— 对「一阶惯性+纯滞后」或「二阶振荡」对象做闭环 PID 控制（RK4 数值仿真，含微分滤波与抗积分饱和）。拖动 K<sub>p</sub>/K<sub>i</sub>/K<sub>d</sub>，同时看响应曲线与控制器输出 u(t)，附「仅 P」对照线与 IAE 指标。
 - **Bode 图** —— 任意有理传递函数的幅频/相频特性。输入分子/分母多项式系数，自动标注幅值穿越 ω<sub>c</sub>、相角裕度 γ、幅值裕度 h，并求解闭环极点交叉验证稳定性。
 - **Nyquist 图** —— 开环幅相曲线与稳定性判据。同一传递函数，绘制完整 Γ 曲线（含共轭镜像），标出临界点 (-1, j0) 与单位圆，报告右半平面闭环极点数 Z。
 - **根轨迹** —— 闭环极点随增益 K (0→∞) 的运动轨迹。点击画布放置开环极点/零点（Shift+点击放共轭对），K 对数扫掠绘制轨迹（Durand-Kerner 求根），颜色对应 K 大小，报告保持稳定的最大 K。
+- **Bode 裕度游乐场** —— 在 s 平面上**拖动零极点**、对数旋 K，Bode 图与 γ/h 实时重算；把极点拖向虚轴，亲眼看相位裕度被一口口吃掉，加零点看它回血（PD/超前补偿的频域版本）。
+- **Nyquist 围线动画** —— D 形围线在 s 平面巡游，右屏同步描出映射曲线；自动报告绕 −1 的顺时针圈数 N、开环右半平面极点 P 与 Z = N+P，并与闭环求根交叉验证。默认载入教材例 6.1。
+- **根轨迹 · 增益滑块** —— 完整轨迹点云之上拖 K，闭环极点沿轨迹实时跑，右图同步当前 K 的闭环阶跃响应与主导阻尼比；极点踩上虚轴即临界高亮（示例系统藏 K=16 彩蛋，对接教材第 7 章）。
+- **PID 救火箭** —— 游戏化闭环：调 K<sub>p</sub>/K<sub>i</sub>/K<sub>d</sub> 让 100 m 高空的火箭软着陆（推力单向受限）。P 催落、D 刹车、I 帮倒忙，落地速度评分，滑块可在下落途中实时拧。
+- **采样与数字 PID** —— 教材第 13 章 · 实验 10：对象 1/(s+1) 经 ZOH 离散化，采样序列与 z 平面闭环极点同屏；K<sub>c</sub>=(1+e<sup>−T</sup>)/(1−e<sup>−T</sup>)、「隔拍振铃」、数字 PI 稳定三角形 K<sub>i</sub>&lt;(2/T)(K<sub>c</sub>−K<sub>p</sub>) 全部可亲手拧出来。
 
 ## 快速开始
 
@@ -48,7 +53,8 @@ python -m http.server 8123
 ## 测试
 
 ```bash
-node tests/math.test.mjs   # 数学断言
+node tests/math.test.mjs   # 数学断言（求根、阶跃回归、PID 对象回归）
+node tests/extras.test.mjs # 实验 6—10 断言（裕度穿越、Nyquist 圈数、ZOH 离散、火箭物理）
 node tests/syntax.test.mjs # 整体内联 script 的语法兜底
 ```
 
