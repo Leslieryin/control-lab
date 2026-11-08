@@ -66,6 +66,7 @@ footer{max-width:1060px;margin:0 auto;padding:0 16px 30px;color:var(--muted);fon
     <button data-t="rlk">根轨迹 · 增益滑块</button>
     <button data-t="rocket">PID 救火箭</button>
     <button data-t="disc">采样与数字 PID</button>
+    <button data-t="lqr">LQR 权重游乐场</button>
   </nav>
 </header>
 
@@ -285,6 +286,27 @@ footer{max-width:1060px;margin:0 auto;padding:0 16px 30px;color:var(--muted);fon
   </div>
 </section>
 
+<!-- ============ 实验 11:LQR 权重游乐场 ============ -->
+<section id="tab-lqr">
+  <div class="panel">
+    <h2>LQR 权重游乐场:两个权重换来整个控制器(教材第 14 章 · 实验 11)</h2>
+    <p class="hint">对象是双积分器——实验 9 那枚火箭的线性化(推力直接控制加速度)。LQR 把品味写成代价 J = ∫(q<sub>1</sub>x<sub>1</sub>² + q<sub>2</sub>x<sub>2</sub>² + r·u²)dt:q 是"偏差罚单单价",r 是"油钱单价"。解 Riccati 方程得最优状态反馈 u = −k<sub>1</sub>x<sub>1</sub> − k<sub>2</sub>x<sub>2</sub>——不必调三个增益,只回答"你更心疼什么"。灰色虚线为同 k<sub>1</sub> 的纯比例对照。</p>
+    <div class="ctrls">
+      <div class="ctrl"><label>位置权重 q<sub>1</sub> <b id="v-lqrq1"></b></label>
+        <input type="range" id="in-lqrq1" min="0.1" max="10" step="0.05" value="1"></div>
+      <div class="ctrl"><label>速度权重 q<sub>2</sub> <b id="v-lqrq2"></b></label>
+        <input type="range" id="in-lqrq2" min="0" max="10" step="0.05" value="1"></div>
+      <div class="ctrl"><label>控制代价 r <b id="v-lqrr"></b></label>
+        <input type="range" id="in-lqrr" min="0.1" max="10" step="0.05" value="1"></div>
+    </div>
+    <div class="chips" id="lqr-chips"></div>
+    <div class="plotwrap"><canvas id="cv-lqr" height="280"></canvas></div>
+    <div class="plotwrap"><canvas id="cv-lqru" height="150"></canvas></div>
+    <div class="plotwrap"><canvas id="cv-lqrs" height="320" style="width:460px;max-width:100%"></canvas></div>
+    <p class="note">读法:q<sub>1</sub>=q<sub>2</sub>=1、r=1 时 K = [1, √3] ≈ [1, 1.732],闭环极点 −0.866±0.5j(ζ = 0.866,教材例 14.1);把 q<sub>2</sub> 拖到 0,极点走到 −0.707±0.707j——恰是巴特沃斯角(ζ = 0.707);把 r 拖到 0.1,极点上实轴分手(−1.06 / −2.98),响应加快且无超调。看 PM 芯片:无论怎么拖,相位裕度始终 ≥ 60°——Kalman 回差定理 |1+L(jω)| ≥ 1 在替你兜底。对照纯 P:双积分器上纯比例永远等幅振荡,是 r·u² 这笔"油钱"自动生出了阻尼 k<sub>2</sub>。</p>
+  </div>
+</section>
+
 </main>
 <footer>自动控制原理交互实验台 · 单文件离线可用 · MIT License · 由 Leslieryin 维护</footer>
 
@@ -442,6 +464,43 @@ function simulateLanding(Kp,Ki,Kd,opt={}){
     if(y<=0){y=0;break;}
   }
   return{landed:y<=0,vImpact:y<=0?Math.abs(v):null,t,log};
+}
+// 实验 11:双积分器 LQR(A=[[0,1],[0,0]],B=[0;1])闭式 Riccati 解。
+// J=∫(q1·x1²+q2·x2²+r·u²)dt;P 对称 2×2,ARE 三条方程按次序解出:
+// p2²=q1·r、p3²=q2·r+2r·p2、p1=p2·p3/r;K=R⁻¹BᵀP=[p2/r, p3/r]
+function lqrDI(q1,q2,r){
+  const p2=Math.sqrt(q1*r);
+  const p3=Math.sqrt(q2*r+2*r*p2);
+  const p1=p2*p3/r;
+  return{P:[p1,p2,p3],K:[p2/r,p3/r]};
+}
+// 单位阶跃(k_r=k1 消稳态差)下的 x1(t) 与 u(t):闭环 s²+k2·s+k1。
+// 记 y=x1−1(齐次偏差,初值 −1、静止),u=−k1·y−k2·ẏ;三分支覆盖 ζ<1/=1/>1
+function lqrStep(K,t){
+  const k1=K[0],k2=K[1],a=k2/2;
+  if(Math.abs(k1-a*a)<1e-12){ // 临界阻尼:−e^{−at}(1+at)
+    const y=-Math.exp(-a*t)*(1+a*t);
+    const yd=a*a*t*Math.exp(-a*t);
+    return{y:1+y,u:-k1*y-k2*yd};
+  }
+  if(k1>a*a){ // 欠阻尼
+    const b=Math.sqrt(k1-a*a);
+    const y=-Math.exp(-a*t)*(Math.cos(b*t)+a/b*Math.sin(b*t));
+    const yd=k1/b*Math.exp(-a*t)*Math.sin(b*t);
+    return{y:1+y,u:-k1*y-k2*yd};
+  }
+  const r1=a-Math.sqrt(a*a-k1),r2=a+Math.sqrt(a*a-k1); // 过阻尼:r1<r2
+  const y=-(r2*Math.exp(-r1*t)-r1*Math.exp(-r2*t))/(r2-r1);
+  const yd=k1*(Math.exp(-r1*t)-Math.exp(-r2*t))/(r2-r1);
+  return{y:1+y,u:-k1*y-k2*yd};
+}
+// 回路 L(s)=(k1+k2·s)/s² 的幅值穿越 ωgc 与相位裕度(度)。
+// |L|=1 ⇔ w⁴−k2²w²−k1²=0;PM = atan(k2·ωgc/k1)。Kalman 回差定理保证 ≥60°
+function lqrLoopPM(K){
+  const k1=K[0],k2=K[1];
+  const w2=(k2*k2+Math.sqrt(k2*k2*k2*k2+4*k1*k1))/2;
+  const wgc=Math.sqrt(w2);
+  return{wgc,pm:Math.atan2(k2*wgc,k1)*180/Math.PI};
 }
 
 /* ============ 画布工具（HiDPI + 坐标系） ============ */
@@ -1350,6 +1409,76 @@ function setChips(id,items){const box=document.getElementById(id);box.innerHTML=
   }
   function fnline(f,b){const pts=[];for(let i=0;i<=200;i++){const t=b*i/200;pts.push([t,f(t)]);}return pts;}
   ["in-dt","in-dkp","in-dki"].forEach(id=>$(id).addEventListener("input",render));
+  window.addEventListener("resize",render);
+  render();
+})();
+
+/* ============ 实验 11:LQR 权重游乐场 ============ */
+(function(){
+  const $=id=>document.getElementById(id);
+  function fnline(f,b){const pts=[];for(let i=0;i<=400;i++){const t=b*i/400;pts.push([t,f(t)]);}return pts;}
+  function render(){
+    const q1=+$("in-lqrq1").value,q2=+$("in-lqrq2").value,r=+$("in-lqrr").value;
+    $("v-lqrq1").textContent=q1.toFixed(2);$("v-lqrq2").textContent=q2.toFixed(2);$("v-lqrr").textContent=r.toFixed(2);
+    const{P,K}=lqrDI(q1,q2,r);
+    const k1=K[0],k2=K[1],wn=Math.sqrt(k1),zeta=k2/(2*wn);
+    const roots=polyRoots([k1,k2,1]);
+    const pm=lqrLoopPM(K);
+    const T=Math.min(28,Math.max(6,9/wn));
+    // 图1:阶跃响应 + 纯 P 对照(等幅振荡 1−cos(ωₙt))
+    const p=new Plot($("cv-lqr"));
+    p.frame([0,T],[-0.05,1.35]);
+    p.hline(1,"#c9d4e0");
+    const w0=Math.sqrt(k1);
+    p.line(fnline(t=>1-Math.cos(w0*t),T),"#9aa7b5",1.3,[5,4]);
+    p.line(fnline(t=>lqrStep(K,t).y,T),"#0f6cbd",2);
+    p.text("LQR 闭环",T*0.97,1.24,"#0f6cbd",10,"right");
+    p.text("纯 P 对照:等幅振荡",T*0.97,0.22,"#8a97a5",10,"right");
+    // 图2:控制量 u(t)
+    const uPts=fnline(t=>lqrStep(K,t).u,T);
+    let uMax=0;for(const[,v]of uPts)uMax=Math.max(uMax,Math.abs(v));
+    const pu=new Plot($("cv-lqru"));
+    pu.frame([0,T],[-uMax*1.15,uMax*1.15]);
+    pu.hline(0,"#dbe3ec",[]);
+    pu.line(fnline(t=>k1*Math.cos(w0*t),T),"#9aa7b5",1.2,[5,4]);
+    pu.line(uPts,"#b45309",1.8);
+    pu.text("u(t)(橙)与纯 P 的 u(灰虚)",T*0.97,uMax*1.02,"#b45309",10,"right");
+    // 图3:s 平面:当前极点 + r 扫掠轨迹 + |s|=1 参考圆
+    const traj=[];
+    for(let i=0;i<=70;i++){
+      const rr=0.05*Math.pow(20/0.05,i/70);
+      const rs=polyRoots([lqrDI(q1,q2,rr).K[0],lqrDI(q1,q2,rr).K[1],1]);
+      for(const rr2 of rs)traj.push(rr2);
+    }
+    let xLo=Math.min(-0.6,...roots.map(q=>q.re),...traj.map(q=>q.re))-0.4;
+    const xHi=0.5;
+    let yM=Math.max(1.1,...roots.map(q=>Math.abs(q.im)),...traj.map(q=>Math.abs(q.im)))+0.35;
+    const q=new Plot($("cv-lqrs"));
+    q.frame([xLo,xHi],[-yM,yM],{nx:5,ny:4});
+    q.ctx.save();q.ctx.beginPath();q.ctx.rect(q.padL,q.padT,q.w-q.padL-q.padR,q.h-q.padT-q.padB);q.ctx.clip();
+    const circ=[];for(let a2=0;a2<=6.3;a2+=0.05)circ.push([Math.cos(a2),Math.sin(a2)]);
+    q.line(circ,"#dbe3ec",1.2,[4,4]);
+    q.text("|s| = 1",0.08,1.02,"#b9c5d2",9,"left");
+    for(const pt of traj)q.dot(pt.re,pt.im,"#d7e3f2",1.6);
+    for(const rt of roots){
+      q.dot(rt.re,rt.im,"#0f6cbd",6);
+      q.text("×",rt.re,rt.im,"#fff",10,"center");
+    }
+    q.text("蓝× = 当前闭环极点;浅点 = r 从 0.05 → 20 的轨迹",xLo+0.1,-yM+0.3,"#8a97a5",9,"left");
+    q.ctx.restore();
+    // chips
+    const u0=k1; // u(0+)=k1(r−x1)−k2·x2,静止起步 x1=x2=0
+    setChips("lqr-chips",[
+      `K = [<b>${k1.toFixed(3)}</b>, <b>${k2.toFixed(3)}</b>]`,
+      `闭环极点:${fmtRootsCN(roots)}`,
+      `ω<sub>n</sub> = <b>${wn.toFixed(3)}</b>,ζ = <b>${zeta.toFixed(3)}</b>${zeta<0.999?"(欠阻尼)":zeta>1.001?"(过阻尼:极点已上实轴)":"(临界)"}`,
+      `PM ≈ <b>${pm.pm.toFixed(1)}°</b> <span class="stable">≥ 60° ✓</span>(ω<sub>gc</sub> = ${pm.wgc.toFixed(3)})`,
+      `u(0+) = <b>${u0.toFixed(2)}</b>(油钱起步价 = 位置权重)`,
+      q2===0?`<span class="stable">q₂ = 0:恰落巴特沃斯角(ζ = 0.707,极点在 −0.707±0.707j)</span>`:``,
+      Math.abs(zeta-Math.SQRT1_2)<0.004&&q2>0?`<span class="stable">ζ = 0.707:巴特沃斯双极点</span>`:``,
+    ]);
+  }
+  ["in-lqrq1","in-lqrq2","in-lqrr"].forEach(id=>$(id).addEventListener("input",render));
   window.addEventListener("resize",render);
   render();
 })();

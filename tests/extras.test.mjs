@@ -1,9 +1,9 @@
 /**
- * 实验 6—10 的数学核心测试：裕度穿越、Nyquist 圈数、ZOH 离散闭环、火箭物理。
+ * 实验 6—11 的数学核心测试：裕度穿越、Nyquist 圈数、ZOH 离散闭环、火箭物理、LQR。
  *
  * 与 math.test.mjs 同一哲学：从 index.html 现切真实源码，拿有解析解/有教材
  * 锚点的用例对拍。这些数字同时是教材《控制理论:从推导到实验》的数值锚点
- * （第 5、6、7、13 章），两边漂移任何一边都会在这里炸出来。
+ * （第 5、6、7、13、14 章），两边漂移任何一边都会在这里炸出来。
  */
 import fs from "node:fs";
 import { loadInline } from "./extract.mjs";
@@ -17,6 +17,7 @@ const M = await loadInline(
     "bodeSweep", "marginCrossings", "nyquistContourData",
     "lamOf", "kcZOH", "discreteChar", "discreteRoots", "discreteSim",
     "rocketPID", "simulateLanding",
+    "lqrDI", "lqrStep", "lqrLoopPM",
   ].join(", ")
 );
 
@@ -112,6 +113,57 @@ console.log("\n[实验 9：火箭物理与 PID]");
   ok("rocketPID 限幅：D 项爆冲时输出顶到 30、反向误差压到 0",
      M.rocketPID(0, 0, -1000, 0, 0, 1, 0.01, 30) === 30 &&
      M.rocketPID(-1000, 0, -1000, 1, 0, 0, 0.01, 30) === 0);
+}
+
+console.log("\n[实验 11：双积分器 LQR（教材第 14 章锚点）]");
+{
+  const d = M.lqrDI(1, 1, 1);
+  ok("Q=I, R=1：K = [1, √3]（例 14.1 闭式解）",
+     close(d.K[0], 1, 1e-9) && close(d.K[1], Math.sqrt(3), 1e-9),
+     `实得 [${d.K.map(v => v.toFixed(6)).join(", ")}]`);
+  ok("P = [[√3,1],[1,√3]]（ARE 闭式解,J(x₀=e₁)=√3）",
+     close(d.P[0], Math.sqrt(3), 1e-9) && close(d.P[1], 1, 1e-9) && close(d.P[2], Math.sqrt(3), 1e-9),
+     `实得 [${d.P.map(v => v.toFixed(6)).join(", ")}]`);
+  const roots = M.polyRoots([1, Math.sqrt(3), 1]).map(r => [r.re, r.im]).sort((a, b) => a[1] - b[1]);
+  ok("闭环极点 −0.866 ± 0.5j（ζ = 0.866,|s| = 1）",
+     close(roots[0][0], -0.8660254, 1e-4) && close(Math.abs(roots[0][1]), 0.5, 1e-4) &&
+     Math.hypot(roots[0][0], roots[0][1]) - 1 < 1e-9,
+     `实得 ${roots.map(([re, im]) => `${re.toFixed(4)}${im >= 0 ? "+" : ""}${im.toFixed(4)}j`).join(", ")}`);
+  ok("ζ = √3/2,Mp ≈ 0.43%（几乎无超调）",
+     close(Math.sqrt(3) / 2, 0.8660254, 1e-6) && close(M.lqrStep(d.K, 100).y, 1, 1e-9),
+     `终值 y(∞) = ${M.lqrStep(d.K, 100).y.toFixed(6)}`);
+
+  const pm = M.lqrLoopPM(d.K);
+  ok("PM ≈ 72.4°（≥ 60° 定理下界）", close(pm.pm, 72.38, 0.1) && pm.pm >= 60,
+     `实得 ${pm.pm.toFixed(2)}° @ ωgc = ${pm.wgc.toFixed(4)}`);
+  const pmBW = M.lqrLoopPM(M.lqrDI(1, 0, 1).K);
+  ok("q₂ = 0：PM ≈ 65.5°,仍 ≥ 60°", close(pmBW.pm, 65.53, 0.1), `实得 ${pmBW.pm.toFixed(2)}°`);
+  const pmHi = M.lqrLoopPM(M.lqrDI(1, 1, 0.1).K);
+  ok("r = 0.1：PM ≈ 79.2°", close(pmHi.pm, 79.23, 0.1), `实得 ${pmHi.pm.toFixed(2)}°`);
+  const pmLo = M.lqrLoopPM(M.lqrDI(1, 1, 10).K);
+  ok("r = 10：PM ≈ 68.2°,权重怎么拖都出不了 60° 圈",
+     close(pmLo.pm, 68.16, 0.1) && pmLo.pm >= 60, `实得 ${pmLo.pm.toFixed(2)}°`);
+
+  const bw = M.lqrDI(1, 0, 1);
+  ok("q₂ = 0：K = [1, √2],巴特沃斯角 ζ = 0.707(极点 −0.707±0.707j)",
+     close(bw.K[1], Math.SQRT2, 1e-9) && close(bw.K[1] / (2 * Math.sqrt(bw.K[0])), Math.SQRT1_2, 1e-9),
+     `实得 K = [${bw.K.map(v => v.toFixed(6)).join(", ")}]`);
+  const ag = M.lqrDI(1, 1, 0.1);
+  const agR = M.polyRoots([ag.K[0], ag.K[1], 1]).map(r => r.re).sort((a, b) => a - b);
+  ok("r = 0.1：K ≈ [3.162, 4.040],极点上实轴分手 −1.06 / −2.98(过阻尼)",
+     close(ag.K[0], 3.1622777, 1e-4) && close(ag.K[1], 4.0403665, 1e-4) &&
+     close(agR[0], -2.9787553, 1e-4) && close(agR[1], -1.0616104, 1e-4),
+     `实得 K = [${ag.K.map(v => v.toFixed(4)).join(", ")}],极点 ${agR.map(v => v.toFixed(4)).join(", ")}`);
+  const so = M.lqrDI(1, 1, 10);
+  ok("r = 10：K ≈ [0.316, 0.856](控制变贵,收敛放缓)",
+     close(so.K[0], 0.3162278, 1e-4) && close(so.K[1], 0.8558361, 1e-4),
+     `实得 [${so.K.map(v => v.toFixed(4)).join(", ")}]`);
+  ok("lqrStep 三分支自洽:临界阻尼(q₂=2,q₁=r=1)终值仍为 1",
+     close(M.lqrStep(M.lqrDI(1, 2, 1).K, 80).y, 1, 1e-9) &&
+     close(M.lqrStep(M.lqrDI(1, 1, 0.1).K, 80).y, 1, 1e-9));
+  ok("u(0+) = k₁(油钱起步价):r=1 时为 1,r=0.1 时为 √10",
+     close(M.lqrStep(d.K, 0).u, 1, 1e-9) && close(M.lqrStep(ag.K, 0).u, Math.sqrt(10), 1e-9),
+     `实得 ${M.lqrStep(d.K, 0).u.toFixed(4)} / ${M.lqrStep(ag.K, 0).u.toFixed(4)}`);
 }
 
 console.log(`\n结果：${pass} 通过 / ${fail} 失败`);

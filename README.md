@@ -7,11 +7,11 @@
 
 为《自动控制原理》课程的核心概念而设计：与其背公式，不如拖动滑块亲眼看 ζ、K<sub>p</sub>、K<sub>i</sub>、K<sub>d</sub> 改变时曲线如何变化。
 
-> **EN** — A single-file interactive lab for classical control theory: step response, PID, Bode, Nyquist, root locus, plus a drag-the-poles margin playground, a Nyquist D-contour animation, a gain-slider root locus, a PID rocket-landing game and a sampled digital PID bench — all computed locally in your browser. [Try it →](https://leslieryin.github.io/control-lab/)
+> **EN** — A single-file interactive lab for classical control theory: step response, PID, Bode, Nyquist, root locus, plus a drag-the-poles margin playground, a Nyquist D-contour animation, a gain-slider root locus, a PID rocket-landing game, a sampled digital PID bench and an LQR weight playground — all computed locally in your browser. [Try it →](https://leslieryin.github.io/control-lab/)
 
 ![拖动阻尼比 ζ，超调量与调节时间随之实时变化](docs/demo.gif)
 
-## 十个实验
+## 十一个实验
 
 - **二阶系统阶跃响应** —— 标准二阶系统 G(s)=Kω<sub>n</sub>²/(s²+2ζω<sub>n</sub>s+ω<sub>n</sub>²) 的单位阶跃响应。拖动 ζ / ω<sub>n</sub> / K，实时显示超调量 σ%、峰值时间、上升时间、调节时间（2%/5%）。
 - **PID 控制器** —— 对「一阶惯性+纯滞后」或「二阶振荡」对象做闭环 PID 控制（RK4 数值仿真，含微分滤波与抗积分饱和）。拖动 K<sub>p</sub>/K<sub>i</sub>/K<sub>d</sub>，同时看响应曲线与控制器输出 u(t)，附「仅 P」对照线与 IAE 指标。
@@ -23,6 +23,7 @@
 - **根轨迹 · 增益滑块** —— 完整轨迹点云之上拖 K，闭环极点沿轨迹实时跑，右图同步当前 K 的闭环阶跃响应与主导阻尼比；极点踩上虚轴即临界高亮（示例系统藏 K=16 彩蛋，对接教材第 7 章）。
 - **PID 救火箭** —— 游戏化闭环：调 K<sub>p</sub>/K<sub>i</sub>/K<sub>d</sub> 让 100 m 高空的火箭软着陆（推力单向受限）。P 催落、D 刹车、I 帮倒忙，落地速度评分，滑块可在下落途中实时拧。
 - **采样与数字 PID** —— 教材第 13 章 · 实验 10：对象 1/(s+1) 经 ZOH 离散化，采样序列与 z 平面闭环极点同屏；K<sub>c</sub>=(1+e<sup>−T</sup>)/(1−e<sup>−T</sup>)、「隔拍振铃」、数字 PI 稳定三角形 K<sub>i</sub>&lt;(2/T)(K<sub>c</sub>−K<sub>p</sub>) 全部可亲手拧出来。
+- **LQR 权重游乐场** —— 教材第 14 章 · 实验 11：双积分器（实验 9 火箭的线性化）上拖动代价权重 q<sub>1</sub>/q<sub>2</sub>/r，闭式 Riccati 解实时给出最优状态反馈 K=[√(q<sub>1</sub>/r), √(q<sub>2</sub>/r+2√(q<sub>1</sub>/r))]；阶跃响应、控制量 u(t)、s 平面极点与 r 扫掠轨迹同屏，q<sub>2</sub>=0 亲眼看巴特沃斯角（ζ=0.707），PM 芯片全程 ≥ 60° 验证 Kalman 回差定理。
 
 ## 快速开始
 
@@ -43,6 +44,8 @@ python -m http.server 8123
 
 **根轨迹法则**：n 条分支起于开环极点、m 条终于开环零点，其余 n−m 条沿渐近线 (2k+1)π/(n−m) 趋于无穷；实轴上的段右侧零极点总数为奇数。
 
+**LQR（双积分器）**：J=∫(q<sub>1</sub>x<sub>1</sub>²+q<sub>2</sub>x<sub>2</sub>²+r·u²)dt 的最优反馈是 u=−Kx，K=[√(q<sub>1</sub>/r), √(q<sub>2</sub>/r+2√(q<sub>1</sub>/r))]（代数 Riccati 方程的闭式解）。q<sub>1</sub> 加大=更狠地罚偏差（ω<sub>n</sub> 升），r 加大=油钱更贵（整体放缓）；ζ=k<sub>2</sub>/(2√k<sub>1</sub>) 由权重比决定，与"最佳阻尼比 0.707"不是一回事。Kalman 回差定理：|1+L(jω)| ≥ 1 ⇒ 相位裕度 ≥ 60°、增益可减半而不失稳——LQR 出厂自带。
+
 ## 实现说明
 
 - 单文件 `index.html`（原生 JS + Canvas，无任何外部依赖，约 32KB）
@@ -54,7 +57,7 @@ python -m http.server 8123
 
 ```bash
 node tests/math.test.mjs   # 数学断言（求根、阶跃回归、PID 对象回归）
-node tests/extras.test.mjs # 实验 6—10 断言（裕度穿越、Nyquist 圈数、ZOH 离散、火箭物理）
+node tests/extras.test.mjs # 实验 6—11 断言（裕度穿越、Nyquist 圈数、ZOH 离散、火箭物理、LQR）
 node tests/syntax.test.mjs # 整体内联 script 的语法兜底
 ```
 
